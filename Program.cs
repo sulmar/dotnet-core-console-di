@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace dotnet_core_console_di
 {
@@ -44,6 +45,13 @@ namespace dotnet_core_console_di
              services.AddScoped<IBooService, BooService>();
 
              services.AddLogging(configure => configure.AddConsole());
+
+            services.AddOptions();
+
+            services.Configure<BooOptions>(options =>
+            {
+                options.Count = 5;
+            });
         }
     }
 
@@ -63,6 +71,11 @@ namespace dotnet_core_console_di
         public string Get() => "Boo";
     }
 
+    public class BooOptions
+    {
+        public byte Count { get; set; }
+    }
+
     public class BooService : IBooService
     {
         private readonly IFooService fooService;
@@ -70,18 +83,22 @@ namespace dotnet_core_console_di
          // dotnet add package Microsoft.Extensions.Logging.Console
         private readonly ILogger logger;
 
+        private readonly BooOptions options;
 
-        public BooService(IFooService fooService, ILogger<BooService> logger)
+        public BooService(IOptions<BooOptions> options, IFooService fooService, ILogger<BooService> logger)
         {
+            this.options = options.Value;
             this.fooService = fooService;
             this.logger = logger;
         }
 
         public void DoWork()
         {
-            System.Console.WriteLine(fooService.Get());
-
-            logger.LogInformation(fooService.Get());
+            for(byte i = 0; i<options.Count; i++)
+            {
+                System.Console.WriteLine(fooService.Get());
+                logger.LogInformation(fooService.Get());
+            }
         }
     }
 }
