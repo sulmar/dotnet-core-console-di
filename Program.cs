@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace dotnet_core_console_di
 {
@@ -9,9 +10,13 @@ namespace dotnet_core_console_di
         {
             // dotnet add package Microsoft.Extensions.DependencyInjection
 
-             var services = new ServiceCollection();
+             IServiceCollection services = new ServiceCollection();
 
-             services.AddScoped<IFooService, FooService>();
+             ConfigureServices(services);
+
+            //  services.AddScoped<IFooService, FooService>();
+            //  services.AddScoped<IBooService, BooService>();
+            //  services.AddLogging(configure => configure.AddConsole());
 
              using(var serviceProvider = services.BuildServiceProvider())
              {
@@ -20,6 +25,10 @@ namespace dotnet_core_console_di
                 string result = fooService.Get();
 
                 System.Console.WriteLine(result);
+
+                IBooService booService = serviceProvider.GetService<IBooService>();
+
+                booService.DoWork();
              
              }
 
@@ -28,6 +37,14 @@ namespace dotnet_core_console_di
             Console.ReadKey();
 
         }
+
+        private static void ConfigureServices(IServiceCollection services)
+        {
+             services.AddScoped<IFooService, FooService>();
+             services.AddScoped<IBooService, BooService>();
+
+             services.AddLogging(configure => configure.AddConsole());
+        }
     }
 
     public interface IFooService
@@ -35,8 +52,36 @@ namespace dotnet_core_console_di
         string Get();
     }
 
+    public interface IBooService
+    {
+        void DoWork();
+    }
+
     public class FooService : IFooService
     {
+       
         public string Get() => "Boo";
+    }
+
+    public class BooService : IBooService
+    {
+        private readonly IFooService fooService;
+
+         // dotnet add package Microsoft.Extensions.Logging.Console
+        private readonly ILogger logger;
+
+
+        public BooService(IFooService fooService, ILogger<BooService> logger)
+        {
+            this.fooService = fooService;
+            this.logger = logger;
+        }
+
+        public void DoWork()
+        {
+            System.Console.WriteLine(fooService.Get());
+
+            logger.LogInformation(fooService.Get());
+        }
     }
 }
